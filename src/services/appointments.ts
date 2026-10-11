@@ -8,7 +8,7 @@ import type {
   Receivable,
   RescheduleInput,
 } from '@/types';
-import { formatDate, parseLocalDateTime, toDateKey } from '@/lib/dates';
+import { formatDate, toDateKey } from '@/lib/dates';
 import { hasConflict } from '@/lib/schedule';
 import { createId } from '@/lib/utils';
 import { ApiError, mockRequest } from './client';
