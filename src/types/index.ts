@@ -66,6 +66,30 @@ export interface Patient {
 
 export type PatientInput = Omit<Patient, 'id' | 'createdAt'>;
 
+export type RecurringFrequency = Exclude<SessionFrequency, 'avulsa'>;
+
+/**
+ * Como preencher a agenda a partir do horário recorrente ao salvar o paciente.
+ * `null` = não preencher (e remover agendamentos recorrentes futuros ainda não realizados).
+ */
+export interface RecurrenceOptions {
+  /** Primeira data considerada (AAAA-MM-DD). */
+  from: DateKey;
+  /** Quantas semanas à frente preencher. */
+  weeks: number;
+  modality: AppointmentModality;
+}
+
+export interface PatientSaveResult {
+  patient: Patient;
+  /** Atendimentos criados na agenda pela recorrência. */
+  created: Appointment[];
+  /** Atendimentos recorrentes futuros substituídos/removidos. */
+  removedIds: ID[];
+  /** Horários não agendados por conflito com outro atendimento. */
+  skipped: LocalDateTime[];
+}
+
 /* ----------------------------- Atendimentos ----------------------------- */
 
 export type AppointmentStatus = 'agendado' | 'realizado' | 'cancelado' | 'falta';
@@ -80,6 +104,8 @@ export interface Appointment {
   modality: AppointmentModality;
   status: AppointmentStatus;
   cancellationReason?: CancellationReason;
+  /** Gerado automaticamente a partir do horário recorrente do cadastro do paciente. */
+  recurring?: boolean;
 }
 
 export interface AppointmentInput {

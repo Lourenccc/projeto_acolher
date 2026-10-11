@@ -57,14 +57,12 @@ export function createMockData(now: Date): MockDataset {
   const currentWeek = startOfWeek(now);
   let seq = 0;
 
-  const addAppointment = (patient: Patient, start: Date, forced?: AppointmentStatus) => {
+  const addAppointment = (patient: Patient, start: Date, recurring: boolean) => {
     seq += 1;
     const isPast = start.getTime() + DURATION * 60_000 <= now.getTime();
-    let status: AppointmentStatus = forced ?? 'agendado';
-    if (!forced) {
-      if (isPast) status = seq % 11 === 0 ? 'falta' : seq % 13 === 0 ? 'cancelado' : 'realizado';
-      else if (seq % 17 === 0) status = 'cancelado';
-    }
+    let status: AppointmentStatus = 'agendado';
+    if (isPast) status = seq % 11 === 0 ? 'falta' : seq % 13 === 0 ? 'cancelado' : 'realizado';
+    else if (seq % 17 === 0) status = 'cancelado';
 
     const appointment: Appointment = {
       id: `atd_${seq}`,
@@ -74,6 +72,7 @@ export function createMockData(now: Date): MockDataset {
       modality: seq % 3 === 0 ? 'online' : 'presencial',
       status,
       ...(status === 'cancelado' ? { cancellationReason: 'paciente' as const } : {}),
+      ...(recurring ? { recurring: true } : {}),
     };
     appointments.push(appointment);
 
@@ -104,15 +103,15 @@ export function createMockData(now: Date): MockDataset {
 
       const day = addDays(weekStart, (patient.recurringWeekday + 6) % 7);
       const [h, m] = patient.recurringTime.split(':').map(Number);
-      addAppointment(patient, new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m));
+      addAppointment(patient, new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m), true);
     }
   }
 
   // Atendimentos extras para que o "dia de hoje" sempre tenha movimento.
   const extraDay = now.getDay() === 0 ? addDays(now, 1) : now;
   const at = (hour: number) => new Date(extraDay.getFullYear(), extraDay.getMonth(), extraDay.getDate(), hour, 0);
-  addAppointment(patients[2], at(13));
-  addAppointment(patients[5], at(19));
+  addAppointment(patients[2], at(13), false);
+  addAppointment(patients[5], at(19), false);
 
   // Títulos avulsos: um em atraso (paciente inativo) e um a vencer.
   receivables.push(

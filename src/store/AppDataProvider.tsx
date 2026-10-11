@@ -13,6 +13,8 @@ import type {
   MarkPaidInput,
   Patient,
   PatientInput,
+  PatientSaveResult,
+  RecurrenceOptions,
   Receivable,
   ReceivableInput,
   RescheduleInput,
@@ -29,8 +31,9 @@ import { DEFAULT_SETTINGS } from '@/data/mockData';
 import { getErrorMessage, upsert } from '@/lib/utils';
 
 export interface AppActions {
-  createPatient(input: PatientInput): Promise<Patient>;
-  updatePatient(id: ID, input: PatientInput): Promise<Patient>;
+  /** Salva o paciente e sincroniza a agenda com o horário recorrente (ver `RecurrenceOptions`). */
+  createPatient(input: PatientInput, recurrence: RecurrenceOptions | null): Promise<PatientSaveResult>;
+  updatePatient(id: ID, input: PatientInput, recurrence: RecurrenceOptions | null): Promise<PatientSaveResult>;
   createAppointment(input: AppointmentInput): Promise<Appointment>;
   rescheduleAppointment(id: ID, input: RescheduleInput): Promise<Appointment>;
   cancelAppointment(id: ID, reason: CancellationReason): Promise<Appointment>;
@@ -103,9 +106,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const actions = useMemo<AppActions>(() => {
-    const savePatient = (p: Patient) => {
-      setPatients((list) => upsert(list, p));
-      return p;
+    const savePatient = (result: PatientSaveResult) => {
+      setPatients((list) => upsert(list, result.patient));
+      if (result.created.length || result.removedIds.length) {
+        setAppointments((list) => [...list.filter((a) => !result.removedIds.includes(a.id)), ...result.created]);
+      }
+      return result;
     };
     const saveAppointment = (a: Appointment) => {
       setAppointments((list) => upsert(list, a));
@@ -117,8 +123,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
 
     return {
-      createPatient: async (input) => savePatient(await patientsService.create(input)),
-      updatePatient: async (id, input) => savePatient(await patientsService.update(id, input)),
+      createPatient: async (input, recurrence) => savePatient(await patientsService.create(input, recurrence)),
+      updatePatient: async (id, input, recurrence) => savePatient(await patientsService.update(id, input, recurrence)),
       createAppointment: async (input) => saveAppointment(await appointmentsService.create(input)),
       rescheduleAppointment: async (id, input) => saveAppointment(await appointmentsService.reschedule(id, input)),
       cancelAppointment: async (id, reason) => saveAppointment(await appointmentsService.cancel(id, reason)),

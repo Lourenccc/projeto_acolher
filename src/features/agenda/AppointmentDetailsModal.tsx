@@ -76,6 +76,7 @@ function Details({
     ['Data', `${WEEKDAYS_LONG[start.getDay()]}, ${formatDate(start)}`],
     ['Horário', `${formatRange(a)} (${a.durationMin} min)`],
     ['Modalidade', MODALITY_LABEL[a.modality]],
+    ['Origem', a.recurring ? 'Horário recorrente do cadastro' : 'Agendamento avulso'],
     ['Status', <Badge key="s" tone={APPOINTMENT_STATUS_TONE[a.status]}>{APPOINTMENT_STATUS_LABEL[a.status]}</Badge>],
     ['Valor da sessão', patient ? formatCurrency(patient.sessionPrice) : '—'],
   ];
